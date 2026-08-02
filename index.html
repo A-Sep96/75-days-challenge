@@ -1,0 +1,374 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>75 Challenge — Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#131417; --surface:#1b1d22; --surface-2:#22252b; --line:#2c2f36;
+    --bone:#eae7df; --bone-dim:#b7b4ac; --muted:#83868e; --faint:#565a62;
+    --hard:#cc4038; --hard-dim:#7a2a26; --soft:#7fa392; --soft-dim:#3f5a50;
+    --accent:#cc4038; --accent-dim:#7a2a26;
+    --display:'Oswald',system-ui,sans-serif; --body:'Inter',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:var(--bg);color:var(--bone);font-family:var(--body)}
+  body{-webkit-font-smoothing:antialiased;line-height:1.5;min-height:100vh;padding:0 16px 64px;
+    background-image:radial-gradient(circle at 50% -10%, #1c1f26 0%, var(--bg) 55%);}
+  .wrap{max-width:760px;margin:0 auto}
+  .hide{display:none!important}
+
+  /* ---------- Chooser ---------- */
+  .chooser{padding:52px 2px 0}
+  .chooser .big{font-family:var(--display);font-weight:700;font-size:clamp(64px,20vw,120px);line-height:.82;text-align:center}
+  .chooser .sel{text-align:center;font-size:11px;letter-spacing:.34em;text-transform:uppercase;color:var(--muted);margin:16px 0 30px}
+  .cards{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:600px){.cards{grid-template-columns:1fr}}
+  .card{border:1px solid var(--line);background:var(--surface);padding:24px 22px;display:flex;flex-direction:column}
+  .card .top{display:flex;align-items:baseline;justify-content:space-between;border-bottom:1px solid var(--line);padding-bottom:14px;margin-bottom:16px}
+  .card h3{font-family:var(--display);font-weight:700;font-size:34px;text-transform:uppercase;letter-spacing:.01em}
+  .card .cnt{font-family:var(--display);font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+  .card.hard h3{color:var(--hard)} .card.soft h3{color:var(--soft)}
+  .card ul{list-style:none;display:flex;flex-direction:column;gap:9px;flex:1;margin-bottom:8px}
+  .card li{font-size:13px;color:var(--bone-dim);padding-left:16px;position:relative;line-height:1.35}
+  .card li::before{content:"";position:absolute;left:0;top:7px;width:6px;height:6px;background:var(--faint)}
+  .card.hard li::before{background:var(--hard-dim)} .card.soft li::before{background:var(--soft-dim)}
+  .card .rule{font-size:11.5px;color:var(--muted);border-top:1px solid var(--line);padding-top:12px;margin-top:6px;min-height:46px}
+  .begin{font-family:var(--display);font-weight:600;letter-spacing:.16em;text-transform:uppercase;font-size:14px;
+    padding:13px;cursor:pointer;border:1px solid;background:transparent;transition:all .15s ease;margin-top:14px}
+  .card.hard .begin{color:var(--hard);border-color:var(--hard-dim)}
+  .card.hard .begin:hover,.card.hard .begin.arm{background:var(--hard);border-color:var(--hard);color:#15171b}
+  .card.soft .begin{color:var(--soft);border-color:var(--soft-dim)}
+  .card.soft .begin:hover,.card.soft .begin.arm{background:var(--soft);border-color:var(--soft);color:#15171b}
+  .lockline{text-align:center;font-size:11.5px;color:var(--faint);margin-top:26px;line-height:1.7}
+
+  /* ---------- App ---------- */
+  header{padding:34px 2px 20px;border-bottom:1px solid var(--line)}
+  .kicker{font-size:11px;letter-spacing:.34em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+  h1{font-family:var(--display);font-weight:700;font-size:clamp(46px,13vw,84px);line-height:.9;letter-spacing:-.01em;text-transform:uppercase}
+  h1 .thin{font-weight:300;color:var(--bone-dim)}
+  .tag{margin-top:12px;color:var(--muted);font-size:14px;max-width:54ch}
+
+  .stats{display:grid;grid-template-columns:auto 1fr;gap:22px;align-items:end;margin:26px 2px 8px}
+  .bignum{font-family:var(--display);line-height:.82}
+  .bignum .n{font-size:clamp(58px,17vw,96px);font-weight:600}
+  .bignum .n.done{color:var(--bone)}
+  .bignum .lab{font-size:12px;letter-spacing:.28em;text-transform:uppercase;color:var(--muted);margin-top:6px}
+  .mini{display:flex;gap:26px;justify-content:flex-end;flex-wrap:wrap;padding-bottom:8px}
+  .mini div{text-align:right}
+  .mini .v{font-family:var(--display);font-size:30px;font-weight:500}
+  .mini .v.accent{color:var(--accent)}
+  .mini .k{font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);margin-top:2px}
+  .bar{height:4px;background:var(--surface-2);border:1px solid var(--line);margin:18px 2px 4px;overflow:hidden}
+  .bar>i{display:block;height:100%;background:var(--bone);width:0;transition:width .5s cubic-bezier(.2,.8,.2,1)}
+
+  .row{display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-top:22px;padding:0 2px}
+  .row label{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted)}
+  input[type=date]{background:var(--surface);border:1px solid var(--line);color:var(--bone);font-family:var(--body);font-size:13px;padding:8px 10px;color-scheme:dark}
+
+  .gridhead{display:flex;justify-content:space-between;align-items:baseline;margin:34px 2px 12px}
+  .gridhead h2{font-family:var(--display);font-weight:500;font-size:15px;letter-spacing:.24em;text-transform:uppercase;color:var(--bone-dim)}
+  .gridhead .hint{font-size:11px;color:var(--faint)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(44px,1fr));gap:6px}
+  @media(min-width:560px){.grid{grid-template-columns:repeat(15,1fr)}}
+  .cell{position:relative;aspect-ratio:1;border:1px solid var(--line);background:var(--surface);
+    display:flex;align-items:center;justify-content:center;cursor:pointer;
+    font-family:var(--display);font-weight:500;font-size:14px;color:var(--faint);
+    transition:transform .12s ease,background .2s ease,color .2s ease,border-color .2s ease}
+  .cell:hover{border-color:var(--bone-dim);color:var(--bone-dim)}
+  .cell .prog{position:absolute;left:0;bottom:0;height:3px;background:var(--accent);width:0;transition:width .2s ease}
+  .cell.partial{color:var(--bone-dim)}
+  .cell.done{background:var(--bone);color:#15171b;border-color:var(--bone)}
+  .cell.done .prog{display:none}
+  .cell.current{box-shadow:inset 0 0 0 2px var(--accent)}
+  .cell.sel{outline:2px solid var(--bone);outline-offset:1px;z-index:2}
+  .cell.seal{animation:seal .32s ease}
+  @keyframes seal{0%{transform:scale(.82)}55%{transform:scale(1.08)}100%{transform:scale(1)}}
+
+  .panel{margin-top:30px;border:1px solid var(--line);background:var(--surface)}
+  .panel .top{display:flex;justify-content:space-between;align-items:center;padding:16px 18px;border-bottom:1px solid var(--line)}
+  .panel .top .d{font-family:var(--display);font-weight:600;font-size:26px;text-transform:uppercase}
+  .panel .top .date{font-size:12px;color:var(--muted);letter-spacing:.06em}
+  .panel .top .badge{font-family:var(--display);font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted)}
+  .panel .top .badge.ok{color:#15171b;background:var(--bone);padding:4px 10px}
+  .tasks{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line)}
+  @media(max-width:480px){.tasks{grid-template-columns:1fr}}
+  .task{background:var(--surface);border:none;text-align:left;cursor:pointer;padding:15px 16px;display:flex;gap:13px;align-items:flex-start;color:var(--bone);transition:background .15s ease}
+  .task:hover{background:var(--surface-2)}
+  .box{flex:none;width:22px;height:22px;border:1.5px solid var(--faint);margin-top:1px;position:relative;transition:all .15s ease}
+  .task.on .box{background:var(--bone);border-color:var(--bone)}
+  .task.on .box::after{content:"";position:absolute;left:7px;top:2px;width:5px;height:11px;border:solid #15171b;border-width:0 2px 2px 0;transform:rotate(45deg)}
+  .task .lab{font-family:var(--display);font-weight:500;font-size:16px;letter-spacing:.02em}
+  .task .sub{font-size:11.5px;color:var(--muted);margin-top:2px}
+  .notewrap{padding:14px 16px;border-top:1px solid var(--line)}
+  .notewrap label{display:block;font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);margin-bottom:7px}
+  textarea{width:100%;min-height:52px;resize:vertical;background:var(--bg);border:1px solid var(--line);color:var(--bone);font-family:var(--body);font-size:13px;padding:10px}
+  textarea:focus{outline:none;border-color:var(--bone-dim)}
+
+  .warn{margin-top:26px;border:1px solid var(--accent-dim);padding:16px 18px;display:flex;gap:14px;align-items:flex-start}
+  .warn .mark{font-family:var(--display);font-weight:700;font-size:15px;color:var(--accent);letter-spacing:.06em;flex:none}
+  .warn p{font-size:13px;color:var(--bone-dim)}
+  .reset{margin:22px 2px 0}
+  .reset button{font-family:var(--display);font-weight:500;letter-spacing:.18em;text-transform:uppercase;font-size:12px;background:transparent;border:1px solid var(--accent-dim);color:var(--accent);padding:11px 16px;cursor:pointer;transition:all .15s ease}
+  .reset button:hover,.reset button.arm{background:var(--accent);color:#15171b;border-color:var(--accent)}
+  footer{margin-top:34px;padding-top:18px;border-top:1px solid var(--line);font-size:11.5px;color:var(--faint);line-height:1.7}
+  :focus-visible{outline:2px solid var(--bone);outline-offset:2px}
+  @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<div class="wrap">
+
+  <!-- CHOOSER -->
+  <section class="chooser" id="chooser">
+    <div class="big">75</div>
+    <div class="sel">Choose your version — this locks in</div>
+    <div class="cards">
+      <div class="card hard">
+        <div class="top"><h3>Hard</h3><span class="cnt">6 tasks daily</span></div>
+        <ul>
+          <li>Strict diet — no cheats, no alcohol</li>
+          <li>Two 45-min workouts, one outdoors</li>
+          <li>One gallon of water</li>
+          <li>10 pages of a physical non-fiction book</li>
+          <li>A daily progress photo</li>
+        </ul>
+        <div class="rule">Miss anything, any day, and you restart at Day 1.</div>
+        <button class="begin" data-mode="hard">Begin 75 Hard</button>
+      </div>
+      <div class="card soft">
+        <div class="top"><h3>Soft</h3><span class="cnt">4 tasks daily</span></div>
+        <ul>
+          <li>Eat well — alcohol only on social occasions</li>
+          <li>45 minutes of exercise (one recovery day/week)</li>
+          <li>Three litres of water</li>
+          <li>10 pages of any book</li>
+        </ul>
+        <div class="rule">Consistency over perfection — slip up and just carry on. No reset.</div>
+        <button class="begin" data-mode="soft">Begin 75 Soft</button>
+      </div>
+    </div>
+    <p class="lockline">Once you begin, the version is fixed. To switch, clear this site's saved data in your browser and reload.</p>
+  </section>
+
+  <!-- APP -->
+  <div id="app" class="hide">
+    <header>
+      <div class="kicker" id="kicker">Mental toughness · 75 consecutive days</div>
+      <h1 id="title">75 <span class="thin">Hard</span></h1>
+      <p class="tag" id="tag"></p>
+    </header>
+
+    <div class="stats">
+      <div class="bignum"><div class="n" id="curNum">1</div><div class="lab" id="curLab">Current day</div></div>
+      <div class="mini">
+        <div><div class="v" id="doneN">0</div><div class="k">Days done</div></div>
+        <div><div class="v accent" id="leftN">75</div><div class="k">Remaining</div></div>
+      </div>
+    </div>
+    <div class="bar"><i id="barFill"></i></div>
+
+    <div class="row">
+      <label for="startDate">Day 1 date</label>
+      <input type="date" id="startDate">
+      <span class="hint" style="font-size:11px;color:var(--faint)">optional — maps each square to a calendar date</span>
+    </div>
+
+    <div class="gridhead">
+      <h2>The 75</h2>
+      <span class="hint">solid = complete · accent edge = current · underline = partial</span>
+    </div>
+    <div class="grid" id="grid"></div>
+
+    <section class="panel" id="panel"></section>
+
+    <div class="warn"><span class="mark" id="ruleMark">RULE 0</span><p id="ruleText"></p></div>
+
+    <div class="reset"><button id="resetBtn">Restart</button></div>
+
+    <footer id="foot"></footer>
+  </div>
+</div>
+
+<script>
+/* ---------- storage: window.storage in Claude, localStorage on GitHub ---------- */
+const KEY='seventyfive_v2';
+const mem={};
+const store={
+  async get(k){
+    if(window.storage&&window.storage.get){try{const r=await window.storage.get(k);return (r&&r.value!=null)?r.value:null;}catch(e){return null;}}
+    try{const v=localStorage.getItem(k);return v!=null?v:(k in mem?mem[k]:null);}catch(e){return k in mem?mem[k]:null;}
+  },
+  async set(k,v){
+    if(window.storage&&window.storage.set){try{await window.storage.set(k,v);return;}catch(e){}}
+    try{localStorage.setItem(k,v);return;}catch(e){mem[k]=v;}
+  }
+};
+
+/* ---------- mode definitions ---------- */
+const MODES={
+  hard:{ word:'Hard', accent:'#cc4038', accentDim:'#7a2a26',
+    kicker:'Mental toughness · 75 consecutive days',
+    tag:'Six tasks. Every day. All or nothing. Tap a day to log it — a square seals only when all six are done.',
+    tasks:[
+      {lab:'Diet',      sub:'no cheats · no alcohol'},
+      {lab:'Workout 1', sub:'45 minutes'},
+      {lab:'Workout 2', sub:'45 minutes · 1 outdoors'},
+      {lab:'Water',     sub:'1 gallon (3.8 L)'},
+      {lab:'Read',      sub:'10 pages · physical non-fiction'},
+      {lab:'Photo',     sub:'daily progress pic'},
+    ],
+    ruleMark:'RULE 0',
+    ruleText:'Miss any task on any day and the challenge resets to Day 1. No makeups, no substitutions, no moving a task to tomorrow. That is the entire point.',
+    resetLabel:'Restart challenge', resetArm:'Tap again — back to Day 1',
+    foot:'Logged here: strict diet with no cheats or alcohol · two separate 45-minute workouts, at least one outdoors · one gallon of water · ten pages of a physical non-fiction book · a daily progress photo. Progress saves automatically in this browser. This is a discipline challenge, not a medical or fitness plan — if you have health conditions, clear the daily double workouts and diet with a doctor first.' },
+  soft:{ word:'Soft', accent:'#7fa392', accentDim:'#3f5a50',
+    kicker:'Consistency over perfection · 75 days',
+    tag:'Four tasks. Every day. Progress over perfection. Tap a day to log it — a square seals when all four are done.',
+    tasks:[
+      {lab:'Diet',    sub:'eat well · alcohol only socially'},
+      {lab:'Workout', sub:'45 minutes · 1 recovery day/wk'},
+      {lab:'Water',   sub:'3 litres'},
+      {lab:'Read',    sub:'10 pages · any book'},
+    ],
+    ruleMark:'THE IDEA',
+    ruleText:'75 Soft rewards consistency, not perfection. Slip up on a day and you simply carry on the next — there is no reset. The only job is to keep showing up.',
+    resetLabel:'Reset progress', resetArm:'Tap again — clear all days',
+    foot:'Logged here: balanced eating with alcohol only on social occasions · 45 minutes of exercise daily, with one recovery day a week · three litres of water · ten pages of any book. Progress saves automatically in this browser. Always sensible to check a new exercise or diet plan with a doctor if you have health conditions.' }
+};
+
+let state={mode:null,startDate:'',selected:1,days:{}};
+let justSealed=null;
+
+function M(){return MODES[state.mode];}
+function tasks(){return M().tasks;}
+function blank(){return new Array(tasks().length).fill(false);}
+function dayObj(d){
+  if(!state.days[d]) state.days[d]={t:blank(),note:''};
+  const o=state.days[d];
+  if(!Array.isArray(o.t)) o.t=blank();
+  while(o.t.length<tasks().length) o.t.push(false);
+  return o;
+}
+function count(d){return dayObj(d).t.slice(0,tasks().length).filter(Boolean).length;}
+function isDone(d){return count(d)===tasks().length;}
+function doneTotal(){let n=0;for(let d=1;d<=75;d++) if(isDone(d)) n++;return n;}
+function currentDay(){for(let d=1;d<=75;d++) if(!isDone(d)) return d;return 75;}
+function allDone(){return doneTotal()===75;}
+
+async function save(){await store.set(KEY,JSON.stringify(state));}
+async function load(){
+  const raw=await store.get(KEY);
+  if(raw){try{const s=JSON.parse(raw);state.mode=s.mode||null;state.startDate=s.startDate||'';state.selected=s.selected||1;state.days=s.days||{};}catch(e){}}
+}
+
+function dateFor(d){
+  if(!state.startDate) return '';
+  const base=new Date(state.startDate+'T00:00:00');if(isNaN(base)) return '';
+  base.setDate(base.getDate()+(d-1));
+  return base.toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'});
+}
+
+/* build grid once */
+const grid=document.getElementById('grid');
+for(let d=1;d<=75;d++){
+  const c=document.createElement('button');
+  c.className='cell';c.dataset.day=d;
+  c.innerHTML=`<span>${d}</span><i class="prog"></i>`;
+  c.addEventListener('click',()=>{state.selected=d;renderAll();save();});
+  grid.appendChild(c);
+}
+
+function renderGrid(){
+  const cur=currentDay(),finished=allDone(),tot=tasks().length;
+  grid.querySelectorAll('.cell').forEach(c=>{
+    const d=+c.dataset.day,n=count(d),done=n===tot;
+    c.className='cell'+(done?' done':'')+(n>0&&!done?' partial':'')+((!finished&&d===cur)?' current':'')+(d===state.selected?' sel':'');
+    c.querySelector('.prog').style.width=(done?100:(n/tot*100))+'%';
+    if(justSealed===d) c.classList.add('seal');
+  });
+  justSealed=null;
+}
+function renderStats(){
+  const done=doneTotal(),cur=currentDay(),finished=allDone();
+  const curNum=document.getElementById('curNum');
+  curNum.textContent=finished?'DONE':cur;curNum.classList.toggle('done',finished);
+  curNum.style.fontSize=finished?'clamp(40px,11vw,64px)':'';
+  document.getElementById('curLab').textContent=finished?'75 days complete':'Current day';
+  document.getElementById('doneN').textContent=done;
+  document.getElementById('leftN').textContent=75-done;
+  document.getElementById('barFill').style.width=(done/75*100)+'%';
+}
+const panel=document.getElementById('panel');
+function renderPanel(){
+  const d=state.selected,obj=dayObj(d),done=isDone(d),dt=dateFor(d),tot=tasks().length;
+  panel.innerHTML=`
+    <div class="top">
+      <div><div class="d">Day ${d}</div>${dt?`<div class="date">${dt}</div>`:''}</div>
+      <div class="badge ${done?'ok':''}">${done?'Complete':count(d)+' / '+tot}</div>
+    </div>
+    <div class="tasks" id="tasks"></div>
+    <div class="notewrap">
+      <label for="note">Log — workouts, book, how it went</label>
+      <textarea id="note" placeholder="e.g. AM lift · PM outdoor run · Atomic Habits p.40–50">${obj.note?obj.note.replace(/</g,'&lt;'):''}</textarea>
+    </div>`;
+  const tw=panel.querySelector('#tasks');
+  tasks().forEach((t,i)=>{
+    const b=document.createElement('button');
+    b.className='task'+(obj.t[i]?' on':'');
+    b.innerHTML=`<span class="box"></span><span><span class="lab">${t.lab}</span><span class="sub">${t.sub}</span></span>`;
+    b.addEventListener('click',()=>{
+      const was=isDone(d);obj.t[i]=!obj.t[i];
+      if(!was&&isDone(d)) justSealed=d;
+      renderAll();save();
+    });
+    tw.appendChild(b);
+  });
+  const note=panel.querySelector('#note');
+  note.addEventListener('input',()=>{obj.note=note.value;save();});
+}
+function renderAll(){renderGrid();renderStats();renderPanel();}
+
+/* apply mode chrome */
+function applyMode(){
+  const m=M();
+  document.documentElement.style.setProperty('--accent',m.accent);
+  document.documentElement.style.setProperty('--accent-dim',m.accentDim);
+  document.getElementById('kicker').textContent=m.kicker;
+  document.getElementById('title').innerHTML='75 <span class="thin">'+m.word+'</span>';
+  document.getElementById('tag').textContent=m.tag;
+  document.getElementById('ruleMark').textContent=m.ruleMark;
+  document.getElementById('ruleText').textContent=m.ruleText;
+  document.getElementById('foot').textContent=m.foot;
+  resetBtn.textContent=m.resetLabel;
+}
+
+/* start date */
+const startEl=document.getElementById('startDate');
+startEl.addEventListener('change',()=>{state.startDate=startEl.value;renderAll();save();});
+
+/* reset — keeps the locked mode, clears only day progress */
+const resetBtn=document.getElementById('resetBtn');let armed=false,armT=null;
+resetBtn.addEventListener('click',async()=>{
+  if(!armed){armed=true;resetBtn.textContent=M().resetArm;resetBtn.classList.add('arm');
+    armT=setTimeout(()=>{armed=false;resetBtn.textContent=M().resetLabel;resetBtn.classList.remove('arm');},3500);return;}
+  clearTimeout(armT);armed=false;
+  state.startDate='';state.selected=1;state.days={};
+  startEl.value='';resetBtn.classList.remove('arm');applyMode();renderAll();await save();
+});
+
+/* chooser */
+function showApp(){document.getElementById('chooser').classList.add('hide');document.getElementById('app').classList.remove('hide');applyMode();startEl.value=state.startDate||'';renderAll();}
+document.querySelectorAll('.begin').forEach(btn=>{
+  let a=false,t=null;
+  btn.addEventListener('click',async()=>{
+    if(!a){a=true;btn.classList.add('arm');const o=btn.textContent;btn.textContent='Tap again to lock in';
+      t=setTimeout(()=>{a=false;btn.classList.remove('arm');btn.textContent=o;},3500);return;}
+    clearTimeout(t);
+    state.mode=btn.dataset.mode;state.startDate='';state.selected=1;state.days={};
+    await save();showApp();
+  });
+});
+
+(async()=>{await load();if(state.mode&&MODES[state.mode]){showApp();}})();
+</script>
